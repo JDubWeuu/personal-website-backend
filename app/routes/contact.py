@@ -6,7 +6,7 @@ from ..models.form import Form
 from typing import Annotated
 from dotenv import load_dotenv
 
-load_dotenv()  # This loads the .env file
+load_dotenv()
 
 router = APIRouter(prefix="/contact")
 
