@@ -3,12 +3,13 @@ import asyncio
 from llama_cloud_services import LlamaParse
 from llama_index.core import SimpleDirectoryReader
 from langchain_core.documents import Document
+from dotenv import load_dotenv
 
-# print(os.getenv("LLAMA_CLOUD_API_KEY"))
+load_dotenv()
 
 parser = LlamaParse(
     result_type="markdown",
-    api_key="llx-dOqLACCzrQICD0gNHLvHSzAwEnn3IcvIrIW0YHzvSuvjH6iF"
+    api_key=os.getenv("LLAMA_CLOUD_API_KEY")
 )
 
 async def parse_documents(file_paths: list[str]) -> list[Document]:
