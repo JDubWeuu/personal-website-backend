@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException, status, Body, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, Body, BackgroundTasks, Depends
 import os
 import aiohttp
 from aiohttp import ClientResponse, BasicAuth
 from ..models.form import Form
 from typing import Annotated
-from dotenv import load_dotenv
-
-load_dotenv()
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from ..database.db import get_db_connection
 
 router = APIRouter(prefix="/contact")
 
@@ -45,23 +45,30 @@ async def sendEmail(name: str = "", message_content: str = ""):
         except Exception as e:
             raise e
 
-
 @router.post("/send-form", tags=["contact"], status_code=status.HTTP_201_CREATED)
-async def sendContactEmail(form: Annotated[Form, Body(title="the form a user submitted to contact me")], background_tasks: BackgroundTasks):
+async def sendContactEmail(form: Annotated[Form, Body(title="the form a user submitted to contact me")], background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db_connection)):
     """
     Add the contents of the form into a database to store it, and then forward an email with the contents of the form to your own email
     """
     
     try:
-        res = await sendEmail(form.name, form.content)
-        print(res)
-        # background_tasks.add_task(sendEmail, name=form.name, message_content=form.content)
+        background_tasks.add_task(sendEmail, form.name, form.content)
+        await db.execute(text("INSERT INTO contact_history (name, content) VALUES (:name, :content)"), {
+            "name": form.name,
+            "content": form.content
+        })
+        await db.commit()
         return {
             "message": "Successfully sent contact form!"
         }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email configuration error: " + str(e)
+        )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred: " + str(e)
         )
 

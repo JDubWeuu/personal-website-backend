@@ -3,6 +3,11 @@ from typing import Annotated
 import asyncio
 from .routes.contact import router as email_router
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+from .database.db import sessionManager
+
+load_dotenv()
 
 
 
@@ -10,7 +15,13 @@ origins = [
     "http://localhost:3000"
 ]
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    if sessionManager._engine is not None:
+        await sessionManager.close()
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
