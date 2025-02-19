@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, Query
 from typing import Annotated
 
-router = APIRouter(prefix="ja-google")\
+router = APIRouter(prefix="/ja-google")
 
 
 @router.get("/query", status_code=status.HTTP_200_OK)
