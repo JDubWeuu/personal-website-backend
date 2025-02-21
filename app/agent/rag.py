@@ -7,8 +7,10 @@ from dotenv import load_dotenv
 from langchain_milvus import Milvus, BM25BuiltInFunction
 from uuid import uuid4
 from langchain_nomic import NomicEmbeddings
+from langchain_community.embeddings import JinaEmbeddings
 import nomic
 from langchain.text_splitter import MarkdownHeaderTextSplitter
+from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
 
 load_dotenv()
 
@@ -17,11 +19,15 @@ parser = LlamaParse(
     result_type="markdown",
     api_key=os.getenv("LLAMA_CLOUD_API_KEY")
 )
-nomic.login(os.getenv("NOMIC_API_KEY"))
+# nomic.login(os.getenv("NOMIC_API_KEY"))
 
 # Initialize the embedding model
-nomic_embeddings = NomicEmbeddings(
-    model="nomic-embed-text-v1.5"
+# nomic_embeddings = NomicEmbeddings(
+#     model="nomic-embed-text-v1.5"
+# )
+
+jina_embeddings = JinaEmbeddings(
+    api_key=os.getenv("JINA_API_KEY")
 )
 
 sparse_index_param = {
@@ -37,7 +43,7 @@ dense_index_param = {
 URI = "http://localhost:19530"
 
 # implement a hybrid search
-vector_store = Milvus(embedding_function=nomic_embeddings, connection_args={
+vector_store = Milvus(embedding_function=jina_embeddings, connection_args={
         "uri": URI
     }, collection_name="jason_rag_collection", builtin_function=BM25BuiltInFunction(), vector_field=["dense", "sparse"], consistency_level="Strong", drop_old=True, index_params=[dense_index_param, sparse_index_param])
 
@@ -96,13 +102,17 @@ def vector_db(docs: list[Document] = [], drop_collection: bool = False):
     # print("Insert response:", res)
 
 
-def query(q: str):
+async def query(q: str):
     # within the query here you can probably employ a LLM to choose the specific section or subsection metadata filter by providing it those options and then the user query, to make retrieval more accurate
-    res = vector_store.similarity_search_with_score(
-        q, k=3, ranker_type="rrf", ranker_params={"k": 100}, expr='Section == "EDUCATION"'
-    )
-    for result, score in res:
-        print(score, result)
+    # res = vector_store.similarity_search_with_score(
+    #     q, k=3, ranker_type="rrf", ranker_params={"k": 100}
+    # )
+    res = vector_store._collection_hybrid_search(k=5, ranker_type="rrf", ranker_params={
+        "k": 100
+    }, query=q)
+    for hits in res:
+        for hit in hits:
+            print(hit.text)
     # Encode the query
     # embeddings = embedding_model.encode_queries([q])
     # query_vector = embeddings[0].tolist()  # Convert to list
@@ -121,6 +131,19 @@ def query(q: str):
     #     for hit in result:
     #         results.append(hit["entity"]["text"])
     # return results
+
+# def reranker(retriever):
+#     reranker_args = {
+#         'model': 'castorini/rank_zephyr_7b_v1_full',
+#         'top_n': 3,
+#     }
+#     reranker = 
+#     compression_retriever = ContextualCompressionRetriever(
+#         base_compressor=compressor, base_retriever=retriever
+#     )
+    
+#     return compression_retriever
+    
     
     
 
@@ -135,4 +158,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    query("What courses has Jason taken?")
+    asyncio.run(query("Where did Jason intern at last year?"))
