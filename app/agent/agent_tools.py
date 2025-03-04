@@ -24,22 +24,22 @@ class Link(BaseModel):
 # essentially will be a dynamic link based upon what the user inputs
 LINK_INFO: list[Link] = [
     {
-        "name": "About",
+        "name": "About Page",
         "description": "Gives detailed information about myself with also my resume on there",
         "link": "http://localhost:3000/about"
     },
     {
-        "name": "Projects",
+        "name": "Projects Page",
         "description": "Gives practical information into the projects that I've done in the past during my free time or for hackathons.",
         "link": "http://localhost:3000/projects"
     },
     {
-        "name": "Experience",
-        "description": "Provides a more detailed look into the professional software engineering experiences I've garnered like internships",
+        "name": "Experience Page",
+        "description": "Provides a more detailed look into the professional software engineering experiences I've garnered like internships or work.",
         "link": "http://localhost:3000/experience"
     },
     {
-        "name": "Contact",
+        "name": "Contact Page",
         "description": "A way to email and get in touch with me for any inquiries. If users want to contact me or talk with me, redirect them to this page",
         "link": "http://localhost:3000/contact"
     }

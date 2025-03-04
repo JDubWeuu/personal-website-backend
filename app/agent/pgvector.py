@@ -240,7 +240,10 @@ class PostgresRAG:
     async def close_connection(self):
         if self.pool:
             await self.pool.close()
+        if self.qdrant_client:
+            self.qdrant_client.close()
 
+    
 async def main() -> None:
     db = PostgresRAG()
     # await db.connect()
@@ -252,7 +255,7 @@ async def main() -> None:
     results = await db.query("Where did Jason intern at last year?")
     print(results)
     
-    # await db.close_connection()
+    await db.close_connection()
     
 if __name__ == "__main__":
     # db = PostgresRAG()
