@@ -1,6 +1,6 @@
 from fastapi import Query
 from typing import Annotated
-from ..agent.pgvector import PostgresRAG
+from ..agent.main_retrieval import PostgresRAG
 from ..models.llm import LLMResponse
 
 

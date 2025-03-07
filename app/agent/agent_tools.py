@@ -1,5 +1,5 @@
 from langchain_core.tools import tool
-from pydantic import HttpUrl, ValidationError, BaseModel
+from pydantic import HttpUrl, ValidationError, BaseModel, Field
 from typing import Annotated
 from typing import Optional
 import asyncio
@@ -9,6 +9,7 @@ from langchain_community.embeddings import JinaEmbeddings
 from langchain_core.documents import Document
 from groq import AsyncGroq
 import json
+from main_retrieval import PostgresRAG
 import os
 from dotenv import load_dotenv
 
@@ -20,13 +21,21 @@ class NavigationToolResponse(BaseModel):
     url: HttpUrl
 
 class ProjectInformationToolResponse(BaseModel):
-    techStack: list[str]
-    extra_description: Optional[str]
+    tech_stack: list[str]
+    description: Optional[str]
 class Link(BaseModel):
     name: str
     description: str
     link: HttpUrl
-    
+
+class RetrievalResponse(BaseModel):
+    docs: list[Document]
+
+class QueryInput(BaseModel):
+    query: str = Field(..., description="The user's original query that was inputted")
+
+class projectInformationInput(BaseModel):
+    projectName: str = Field(..., description="The project name which the user is trying to learn about? Specifically, to call this tool, must pass in 'nezerac' or 'visionairy' not case sensitive.")
 
 groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
     
@@ -67,7 +76,7 @@ PROJECT_INFORMATION = {
         "tech_stack": ["FastAPI", "LangChain", "OpenAI API", "Next.js", "Google Cloud", "Python", "TypeScript"]
     }
 }
-@tool(response_format='content')
+@tool(response_format='content', args_schema=QueryInput)
 async def navigation_tool(query: str) -> str:
     """
     based upon the user's query, should be able to figure out the route to a webpage to get more information (or even linkedin or github)
@@ -92,27 +101,40 @@ async def navigation_tool(query: str) -> str:
             "role": "user",
             "content": query
         }
-    ], model="gemma2-9b-it", temperature=0.3, top_p=1, stream=False, response_format={
+    ], model="gemma2-9b-it", temperature=0.1, top_p=1, stream=False, response_format={
         "type": "json_object"
     })
-    
     final_url = json.loads(groq_res.choices[0].to_dict()["message"]["content"])["url"]
+    print(final_url)
     return final_url
     
 
-@tool(response_format="content_and_artifact")
+@tool(response_format="content", args_schema=projectInformationInput)
 def obtainProjectInformation(projectName: str) -> ProjectInformationToolResponse:
     """
-    Pass in the project name and from the project name obtain extra details like the tech stack about the project. This tool is only used if the retrieval from vector database cannot yield any firm data on a specific project.
+    This is to obtain project information about nezerac and visionairy.
+    Pass in the project name and from the project name obtain extra details like the tech stack about the project. This tool is only used if the retrieval tool which obtains information from vector database cannot yield any firm data on a specific project.
     """
     projectDetails = PROJECT_INFORMATION.get(projectName, "No details found on project.")
     return ProjectInformationToolResponse(
         **projectDetails
     ).model_dump_json(indent=2)
 
+@tool(args_schema=QueryInput)
+async def retrieval(query: str) -> RetrievalResponse:
+    """
+    Call this tool every time. Pass in the specific user's query into this tool. Based upon the user's query, responds with information relevant to the query from a vector database which obtains information about myself.
+    """
+    db = PostgresRAG()
+    result = await db.query(query)
+    await db.close_connection()
+    return RetrievalResponse(docs=result)
+    
+
 async def testing():
     response = await navigation_tool.ainvoke("What projects has Jason worked on?")
     print(response)
 
 if __name__ == "__main__":
-    asyncio.run(testing())
+    # asyncio.run(testing())
+    print(obtainProjectInformation.invoke("nezerac"))

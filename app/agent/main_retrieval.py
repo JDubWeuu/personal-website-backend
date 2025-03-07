@@ -252,8 +252,12 @@ async def main() -> None:
     # await db.parse_markdown("extra_info.md")
     # await db.chunk_docs()
     # await db.initialize_vector_store()
-    results = await db.query("Where did Jason intern at last year?")
+    results = await db.query("Give me Jason's projects.")
     print(results)
+    # final_res: list[str] = []
+    # for result in results:
+    #     final_res.append(result.model_dump_json(indent=2))
+    # print(final_res)
     
     await db.close_connection()
     
