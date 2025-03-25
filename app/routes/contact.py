@@ -11,16 +11,16 @@ from ..database.db import get_db_connection
 router = APIRouter(prefix="/contact")
 
 
-async def sendEmail(name: str = "", message_content: str = ""):
+async def sendEmail(name: str = "", email: str = "", message_content: str = ""):
     """Use some third party service to asyncronously send the email"""
-    
+
     MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY")
     if not MAILGUN_API_KEY:
         raise ValueError("MAILGUN_API_KEY is not set in the environment variables.")
 
     mailgun_domain = "sandboxffffaf00d7de4fca92c1a2fa5df419f3.mailgun.org"
     url = f"https://api.mailgun.net/v3/{mailgun_domain}/messages"
-    
+
     async with aiohttp.ClientSession() as session:
         try:
             response: ClientResponse = await session.post(
@@ -29,46 +29,50 @@ async def sendEmail(name: str = "", message_content: str = ""):
                 data={
                     "from": f"Mailgun Sandbox <postmaster@{mailgun_domain}>",
                     "to": "Jason Wu <wu80jason8@gmail.com>",
-                    "subject": f"Message from {name}!",
-                    "text": f"This is an email from: {name}\n\nContent: {message_content}"
-                }
+                    "subject": f"Message from {name} at {email}!",
+                    "text": f"This is an email from: {name}\n\nContent: {message_content}",
+                },
             )
             response_text = await response.text()
 
             if response.status != 200:
                 raise HTTPException(
                     status_code=response.status,
-                    detail=f"Error sending email: {response_text}"
+                    detail=f"Error sending email: {response_text}",
                 )
-            
+
             return {"message": "Email sent successfully", "response": response_text}
         except Exception as e:
             raise e
 
+
 @router.post("/send-form", tags=["contact"], status_code=status.HTTP_201_CREATED)
-async def sendContactEmail(form: Annotated[Form, Body(title="the form a user submitted to contact me")], background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db_connection)):
+async def sendContactEmail(
+    form: Annotated[Form, Body(title="the form a user submitted to contact me")],
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db_connection),
+):
     """
     Add the contents of the form into a database to store it, and then forward an email with the contents of the form to your own email
     """
-    
+
     try:
-        background_tasks.add_task(sendEmail, form.name, form.content)
-        await db.execute(text("INSERT INTO contact_history (name, content) VALUES (:name, :content)"), {
-            "name": form.name,
-            "content": form.content
-        })
+        background_tasks.add_task(sendEmail, form.name, form.email, form.content)
+        await db.execute(
+            text(
+                "INSERT INTO contact_history (name, content) VALUES (:name, :content)"
+            ),
+            {"name": form.name, "content": form.content},
+        )
         await db.commit()
-        return {
-            "message": "Successfully sent contact form!"
-        }
+        return {"message": "Successfully sent contact form!"}
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Email configuration error: " + str(e)
+            detail="Email configuration error: " + str(e),
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred: " + str(e)
+            detail="An unexpected error occurred: " + str(e),
         )
-
