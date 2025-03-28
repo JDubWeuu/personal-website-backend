@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
-from llama_cloud_services import LlamaParse
+
+# from llama_cloud_services import LlamaParse
 import asyncio
 from llama_index.core import SimpleDirectoryReader
 from langchain_core.documents import Document
@@ -33,9 +34,9 @@ RESUME_DOCUMENT_CONTENT: str = """
 
 class PostgresRAG:
     def __init__(self) -> None:
-        self.parser = LlamaParse(
-            result_type="markdown", api_key=os.getenv("LLAMA_CLOUD_API_KEY")
-        )
+        # self.parser = LlamaParse(
+        #     result_type="markdown", api_key=os.getenv("LLAMA_CLOUD_API_KEY")
+        # )
         self.url = os.getenv("SUPABASE_URL")
         self.db_url = os.getenv("SUPABASE_DB_URL")
         # self.supabase_client: Client = create_client(self.url, os.getenv("SUPABASE_API_KEY"))
@@ -229,20 +230,20 @@ class PostgresRAG:
         if not self.pool:
             self.pool = await asyncpg.create_pool(self.db_url, statement_cache_size=0)
 
-    async def parse_pdf(self, file_name: str) -> bool:
-        try:
-            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(
-                BASE_DIR, "../assets/Jason_Wu_Resume.pdf"
-            )  # Resolve absolute path
-            reader = SimpleDirectoryReader(
-                input_files=[file_path], file_extractor={".pdf": self.parser}
-            )
-            docs = await reader.aload_data()
-            self.docs.extend(docs)
-            return True
-        except Exception as e:
-            raise e
+    # async def parse_pdf(self, file_name: str) -> bool:
+    #     try:
+    #         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    #         file_path = os.path.join(
+    #             BASE_DIR, "../assets/Jason_Wu_Resume.pdf"
+    #         )  # Resolve absolute path
+    #         reader = SimpleDirectoryReader(
+    #             input_files=[file_path], file_extractor={".pdf": self.parser}
+    #         )
+    #         docs = await reader.aload_data()
+    #         self.docs.extend(docs)
+    #         return True
+    #     except Exception as e:
+    #         raise e
 
     async def parse_markdown(self, file_name: str):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
