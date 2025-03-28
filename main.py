@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 from app.database.db import sessionManager
 from app.agent.agent_langchain import agent
 from app.database.redis import create_redis_connection
-from redis import Redis
+from mangum import Mangum
+import os
 
 load_dotenv()
 
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     await app.state.redis_client.aclose()
 
 
+root_path = os.getenv("ENV", default="")
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
@@ -39,6 +41,8 @@ app.add_middleware(
 
 app.include_router(email_router)
 app.include_router(jagoogle_router)
+
+handler = Mangum(app)
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
