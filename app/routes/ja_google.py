@@ -99,7 +99,7 @@ async def llm_send_email(
         #             )
         #     except HTTPException as e:
         #         raise e
-    keys_removed = await redis_client.delete(f"user:{request.cookies.get("sessionId")}")
+    keys_removed = await redis_client.delete(f"user:{request.cookies.get('sessionId')}")
     print(keys_removed)
     # on the front end you redirect client side back to ja-google main page
     return {"message": "Successfully sent email to Jason."}
