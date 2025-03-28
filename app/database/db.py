@@ -22,15 +22,7 @@ class Database:
         if database_url is None:
             raise ValueError("SUPABASE_NEW_DB_URL environment variable is not set")
 
-        self._engine = create_async_engine(
-            database_url,
-            echo=True,
-            pool_size=10,
-            pool_recycle=1800,
-            pool_pre_ping=True,
-            max_overflow=5,
-            pool_timeout=30,
-        )
+        self._engine = create_async_engine(database_url, echo=True, poolclass=NullPool)
         self._sessionmaker = async_sessionmaker(
             autocommit=False, bind=self._engine, autoflush=False, expire_on_commit=False
         )
