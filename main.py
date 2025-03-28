@@ -1,14 +1,13 @@
 from fastapi import FastAPI, Depends, status
 from typing import Annotated
-import asyncio
-from .routes.contact import router as email_router
-from .routes.ja_google import router as jagoogle_router
+from app.routes.contact import router as email_router
+from app.routes.ja_google import router as jagoogle_router
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from .database.db import sessionManager
-from .agent.agent_langchain import agent
-from .database.redis import create_redis_connection
+from app.database.db import sessionManager
+from app.agent.agent_langchain import agent
+from app.database.redis import create_redis_connection
 from redis import Redis
 
 load_dotenv()

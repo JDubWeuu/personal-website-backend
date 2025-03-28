@@ -18,7 +18,7 @@ llama_cloud_services==0.6.8
 llama_index==0.12.26
 nltk==3.9.1
 nomic==3.4.1
-numpy==2.2.4
+numpy==1.26.4
 pinecone==6.0.2
 pinecone_text==0.10.0
 pydantic==2.11.0
