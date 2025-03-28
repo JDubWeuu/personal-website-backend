@@ -3,3 +3,6 @@
 needs.txt
 __pycache__
 output.png
+.vercel
+Dockerfile
+.dockerignore

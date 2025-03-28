@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, status
+from fastapi import FastAPI, status
 from app.routes.contact import router as email_router
 from app.routes.ja_google import router as jagoogle_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from app.database.db import sessionManager
 from app.database.redis import create_redis_connection
-from mangum import Mangum
 import os
 
 load_dotenv()
@@ -39,8 +38,6 @@ app.add_middleware(
 
 app.include_router(email_router)
 app.include_router(jagoogle_router)
-
-handler = Mangum(app)
 
 
 @app.get("/", status_code=status.HTTP_200_OK)

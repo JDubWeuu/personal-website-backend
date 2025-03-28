@@ -5,20 +5,14 @@ import asyncio
 from llama_index.core import SimpleDirectoryReader
 from langchain_core.documents import Document
 import asyncpg
-from cohere import (
-    AsyncClientV2 as Cohere_Client,
-    V2RerankResponse,
-    V2RerankResponseResultsItem,
-)
-from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader
-from nltk.tokenize import word_tokenize
-from langchain_qdrant.fastembed_sparse import FastEmbedSparse
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_qdrant import RetrievalMode
+from langchain_community.document_loaders import TextLoader
+
+# from langchain_qdrant.fastembed_sparse import FastEmbedSparse
+# from langchain_huggingface import HuggingFaceEmbeddings
 from asyncpg import Pool
 
 # from langchain_community.vectorstores import SupabaseVectorStore
-from langchain_qdrant import QdrantVectorStore
+# from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import MarkdownHeaderTextSplitter, CharacterTextSplitter
 
 # from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -26,7 +20,7 @@ import warnings
 from huggingface_hub import InferenceClient
 from numpy import ndarray
 from pinecone_text.sparse import BM25Encoder
-from pinecone import Pinecone, ServerlessSpec, IndexModel, IndexList, Index
+from pinecone import Pinecone, ServerlessSpec
 
 load_dotenv()
 
