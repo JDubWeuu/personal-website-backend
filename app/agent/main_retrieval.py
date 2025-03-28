@@ -46,9 +46,13 @@ class PostgresRAG:
         self.db_url = os.getenv("SUPABASE_DB_URL")
         # self.supabase_client: Client = create_client(self.url, os.getenv("SUPABASE_API_KEY"))
         self.embedding_model_id = "Snowflake/snowflake-arctic-embed-l-v2.0"
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=self.embedding_model_id,
-            encode_kwargs={"normalize_embeddings": True},
+        # self.embeddings = HuggingFaceEmbeddings(
+        #     model_name=self.embedding_model_id,
+        #     encode_kwargs={"normalize_embeddings": True},
+        #     model_kwargs={"device": "cpu"},
+        # )
+        self.embeddings_client = InferenceClient(
+            model=self.embedding_model_id, api_key=os.getenv("HUGGING_FACE_API_KEY")
         )
         self.pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
         self.spec = ServerlessSpec(cloud="aws", region="us-east-1")
@@ -82,7 +86,8 @@ class PostgresRAG:
         self.dense_docs = None
 
     async def embed_query(self, query: str) -> ndarray:
-        return self.embeddings.feature_extraction(text=query)
+        return self.embeddings_client.feature_extraction(text=query)
+        # return self.embeddings.feature_extraction(text=query)
 
     async def create_index(self):
         if "hybridsearch" in self.pc.list_indexes().names():
@@ -208,7 +213,7 @@ class PostgresRAG:
             doc.metadata.pop("_collection_name", None)
             new_docs.append(doc)
         self.docs = new_docs
-        await self.create_dense_vectors(new_docs)
+        self.create_dense_vectors(new_docs)
         self.create_sparse_vectors(new_docs)
         # print(new_docs)
         # res = await self.vector_store.aadd_documents(documents=new_docs)
@@ -218,8 +223,9 @@ class PostgresRAG:
         res = self.bm25.encode_documents(texts=[doc.page_content for doc in docs])
         self.sparse_docs = res
 
-    async def create_dense_vectors(self, docs: list[Document]):
-        res = await self.embeddings.aembed_documents(docs)
+    def create_dense_vectors(self, docs: list[Document]):
+        res = [self.embeddings_client.feature_extraction(doc) for doc in docs]
+        # res = await self.embeddings.aembed_documents(docs)
         self.dense_docs = res
 
     async def embed_query(self, query: str):
@@ -369,7 +375,7 @@ class PostgresRAG:
     ) -> list[dict]:
 
         sparse_query = self.bm25.encode_queries(texts=query)
-        dense_query = await self.embeddings.aembed_query(query)
+        dense_query = self.embeddings_client.feature_extraction(query)
 
         hdense, hsparse = self.hybrid_scale(dense_query, sparse_query, alpha)
 
@@ -396,11 +402,11 @@ class PostgresRAG:
 
         return results["matches"]
 
-    async def close_connection(self):
-        if self.pool:
-            await self.pool.close()
-        if self.qdrant_client:
-            self.qdrant_client.close()
+    # async def close_connection(self):
+    #     if self.pool:
+    #         await self.pool.close()
+    #     if self.qdrant_client:
+    #         self.qdrant_client.close()
 
     async def close(self):
         await self.index.close()

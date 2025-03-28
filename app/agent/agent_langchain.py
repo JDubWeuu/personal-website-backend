@@ -121,10 +121,10 @@ Thought:{agent_scratchpad}
 
     async def initial_check(self, query: str):
         """Check whether the user is trying to contact me or not"""
-        self.checker_llm = self.checker_llm.with_structured_output(schema=ResponseModel)
+        checker_llm = self.checker_llm.with_structured_output(schema=ResponseModel)
 
         # Using proper message formatting
-        res: ResponseModel = await self.checker_llm.ainvoke(
+        res: ResponseModel = await checker_llm.ainvoke(
             [
                 {
                     "role": "system",

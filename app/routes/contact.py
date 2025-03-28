@@ -2,11 +2,14 @@ from fastapi import APIRouter, HTTPException, status, Body, BackgroundTasks, Dep
 import os
 import aiohttp
 from aiohttp import ClientResponse, BasicAuth
-from ..models.form import Form
+from ..models.form import Form, FormCaptcha
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from ..database.db import get_db_connection
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter(prefix="/contact")
 
@@ -48,7 +51,7 @@ async def sendEmail(name: str = "", email: str = "", message_content: str = ""):
 
 @router.post("/send-form", tags=["contact"], status_code=status.HTTP_201_CREATED)
 async def sendContactEmail(
-    form: Annotated[Form, Body(title="the form a user submitted to contact me")],
+    form: Annotated[FormCaptcha, Body(title="the form a user submitted to contact me")],
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_connection),
 ):
@@ -57,14 +60,29 @@ async def sendContactEmail(
     """
 
     try:
+        async with aiohttp.ClientSession() as session:
+            response: ClientResponse = await session.post(
+                f"https://www.google.com/recaptcha/api/siteverify",
+                data={
+                    "secret": os.getenv("GOOGLE_CAPTCHA_SECRET_KEY"),
+                    "response": form.captchaCode,
+                },
+            )
+            data = await response.json()
+            if not data.get("success"):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Captcha code is not valid.",
+                )
         background_tasks.add_task(sendEmail, form.name, form.email, form.content)
         await db.execute(
             text(
-                "INSERT INTO contact_history (name, content) VALUES (:name, :content)"
+                "INSERT INTO contact_history (name, email, content) VALUES (:name, :email, :content)"
             ),
-            {"name": form.name, "content": form.content},
+            {"name": form.name, "content": form.content, "email": form.email},
         )
         await db.commit()
+        print("passed")
         return {"message": "Successfully sent contact form!"}
     except ValueError as e:
         raise HTTPException(
