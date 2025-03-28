@@ -5,7 +5,7 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 
 # Copy dependencies and install
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy main.py to the Lambda root (so CMD ["main.handler"] works)
 COPY main.py ./
