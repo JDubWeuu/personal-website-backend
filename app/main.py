@@ -14,7 +14,7 @@ from redis import Redis
 load_dotenv()
 
 
-origins = ["http://localhost:3000"]
+origins = ["http://localhost:3000", "https://jasonwu.dev", "https://www.jasonwu.dev"]
 
 
 @asynccontextmanager
