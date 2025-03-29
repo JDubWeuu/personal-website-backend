@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 
 # from llama_cloud_services import LlamaParse
 import asyncio
-from llama_index.core import SimpleDirectoryReader
 from langchain_core.documents import Document
 import asyncpg
 from langchain_community.document_loaders import TextLoader
