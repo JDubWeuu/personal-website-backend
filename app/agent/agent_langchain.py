@@ -9,9 +9,6 @@ from langchain.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 import os
 import asyncio
-from langchain.globals import set_llm_cache
-from langchain_community.cache import RedisSemanticCache
-from langchain_huggingface import HuggingFaceEmbeddings
 import os
 from dotenv import load_dotenv
 
