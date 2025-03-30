@@ -17,10 +17,10 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter, CharacterTextSp
 
 # from langchain_community.embeddings import HuggingFaceEmbeddings
 import warnings
-from huggingface_hub import InferenceClient
 from numpy import ndarray
 from pinecone_text.sparse import BM25Encoder
 from pinecone import Pinecone, ServerlessSpec
+import aiohttp
 
 load_dotenv()
 
@@ -45,9 +45,11 @@ class PostgresRAG:
         #     encode_kwargs={"normalize_embeddings": True},
         #     model_kwargs={"device": "cpu"},
         # )
-        self.embeddings_client = InferenceClient(
-            model=self.embedding_model_id, api_key=os.getenv("HUGGING_FACE_API_KEY")
-        )
+        # self.embeddings_client = InferenceClient(
+        #     model=self.embedding_model_id,
+        #     api_key=os.getenv("HUGGING_FACE_API_KEY"),
+        #     headers=
+        # )
         self.pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
         self.spec = ServerlessSpec(cloud="aws", region="us-east-1")
         self.index = self.pc.IndexAsyncio(
@@ -79,9 +81,25 @@ class PostgresRAG:
         self.sparse_docs = None
         self.dense_docs = None
 
-    async def embed_query(self, query: str) -> ndarray:
-        return self.embeddings_client.feature_extraction(text=query)
-        # return self.embeddings.feature_extraction(text=query)
+    async def dense_vector_embed(self, query: str) -> ndarray:
+        try:
+            headers = {
+                "Authorization": f"Bearer {os.getenv("HUGGING_FACE_API_KEY")}",
+                "Content-Type": "application/json",
+                "x-wait-for-model": "true",
+                "x-use-cache": "true",
+            }
+            data = {"inputs": query}
+            async with aiohttp.ClientSession() as session:
+                response = await session.post(
+                    "https://router.huggingface.co/hf-inference/pipeline/feature-extraction/Snowflake/snowflake-arctic-embed-l-v2.0",
+                    headers=headers,
+                    data=data,
+                )
+                dense_vectors = await response.json()
+                return dense_vectors
+        except Exception as e:
+            raise e
 
     async def create_index(self):
         if "hybridsearch" in self.pc.list_indexes().names():
@@ -218,7 +236,7 @@ class PostgresRAG:
         self.sparse_docs = res
 
     def create_dense_vectors(self, docs: list[Document]):
-        res = [self.embeddings_client.feature_extraction(doc) for doc in docs]
+        res = [self.dense_vector_embed(doc) for doc in docs]
         # res = await self.embeddings.aembed_documents(docs)
         self.dense_docs = res
 
@@ -369,7 +387,7 @@ class PostgresRAG:
     ) -> list[dict]:
 
         sparse_query = self.bm25.encode_queries(texts=query)
-        dense_query = self.embeddings_client.feature_extraction(query)
+        dense_query = await self.dense_vector_embed(query=query)
 
         hdense, hsparse = self.hybrid_scale(dense_query, sparse_query, alpha)
 
