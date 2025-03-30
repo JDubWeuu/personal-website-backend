@@ -30,7 +30,12 @@ class Database:
         #     pool_timeout=30,
         #     pool_recycle=1800,
         # )
-        self._engine = create_async_engine(database_url, echo=True, poolclass=NullPool)
+        self._engine = create_async_engine(
+            database_url,
+            echo=True,
+            poolclass=NullPool,
+            connect_args={"statement_cache_size": 0},
+        )
         self._sessionmaker = async_sessionmaker(
             autocommit=False, bind=self._engine, autoflush=False, expire_on_commit=False
         )
