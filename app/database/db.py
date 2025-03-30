@@ -34,6 +34,7 @@ class Database:
             database_url,
             echo=True,
             poolclass=NullPool,
+            echo_pool=True,
             connect_args={"statement_cache_size": 0},
         )
         self._sessionmaker = async_sessionmaker(

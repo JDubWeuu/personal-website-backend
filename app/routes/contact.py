@@ -51,7 +51,9 @@ async def sendEmail(name: str = "", email: str = "", message_content: str = ""):
 
 @router.post("/send-form", tags=["contact"], status_code=status.HTTP_201_CREATED)
 async def sendContactEmail(
-    form: Annotated[FormCaptcha, Body(title="the form a user submitted to contact me")],
+    form: Annotated[
+        FormCaptcha, Body(..., title="the form a user submitted to contact me")
+    ],
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_connection),
 ):
@@ -68,7 +70,7 @@ async def sendContactEmail(
                     "response": form.captchaCode,
                 },
             )
-            data = await response.json()
+            data: dict = await response.json()
             if not data.get("success"):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
