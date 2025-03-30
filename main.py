@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from app.database.db import sessionManager
 from app.database.redis import create_redis_connection
+from mangum import Mangum
 import os
 
 load_dotenv()
@@ -43,3 +44,6 @@ app.include_router(jagoogle_router)
 @app.get("/", status_code=status.HTTP_200_OK)
 def root():
     return {"message": "API is up and running!"}
+
+
+handler = Mangum(app)
