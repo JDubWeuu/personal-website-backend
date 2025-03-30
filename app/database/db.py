@@ -52,14 +52,15 @@ class Database:
         if self._sessionmaker is None or self._engine is None:
             raise Exception("Unable to obtain database session")
 
-        async with self._sessionmaker.begin() as session:
-            try:
-                yield session
-            except:
-                await session.rollback()
-                raise
-            finally:
-                await session.close()
+        session = self._sessionmaker()
+        try:
+            yield session
+            await session.commit()
+        except:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
     async def close(self):
         if self._engine is None:
