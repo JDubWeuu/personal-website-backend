@@ -8,6 +8,7 @@ from fastapi import (
     Depends,
     Cookie,
     BackgroundTasks,
+    Body,
 )
 from typing import Annotated
 from ..controllers.llm_controller import get_llm_response
@@ -18,8 +19,10 @@ import json
 import aiohttp
 from .contact import sendEmail
 from ..database.db import get_db_connection
+import datetime
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from ..database.dynamodb_integration import dynamo_client
 
 
 async def get_or_create_session_id(
@@ -71,20 +74,28 @@ async def query(
 @router.post("/send-email", status_code=status.HTTP_201_CREATED)
 async def llm_send_email(
     request: Request,
-    form: Form,
+    form: Annotated[Form, Body(..., description="form object")],
     backgroundTasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db_connection),
+    # db: AsyncSession = Depends(get_db_connection),
 ):
     redis_client = request.app.state.redis_client
     if redis_client.exists(f"user:{request.cookies.get('sessionId')}"):
         backgroundTasks.add_task(sendEmail, form.name, form.email, form.content)
-        await db.execute(
-            text(
-                "INSERT INTO contact_history (name, email, content) VALUES (:name, :email, :content)"
-            ),
-            {"name": form.name, "content": form.content, "email": form.email},
-        )
-        await db.commit()
+        item = {
+            "id": {"S": str(uuid4())},
+            "name": {"S": form.name},
+            "email": {"S": form.email},
+            "content": {"S": form.content},
+            "timestamp": {"S": datetime.datetime.now().isoformat()},
+        }
+        dynamo_client.put_item(TableName="contact", Item=item)
+        # await db.execute(
+        #     text(
+        #         "INSERT INTO contact_history (name, email, content) VALUES (:name, :email, :content)"
+        #     ),
+        #     {"name": form.name, "content": form.content, "email": form.email},
+        # )
+        # await db.commit()
         # async with aiohttp.ClientSession() as client:
         #     try:
         #         data = {"name": form.name, "email": form.email, "content": form.content}

@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException, status, Body, BackgroundTasks, Dep
 import os
 import aiohttp
 from aiohttp import ClientResponse, BasicAuth
+from uuid import uuid4
+import datetime
+from ..database.dynamodb_integration import dynamo_client
 from ..models.form import Form, FormCaptcha
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,7 +58,7 @@ async def sendContactEmail(
         FormCaptcha, Body(..., title="the form a user submitted to contact me")
     ],
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db_connection),
+    # db: AsyncSession = Depends(get_db_connection),
 ):
     """
     Add the contents of the form into a database to store it, and then forward an email with the contents of the form to your own email
@@ -77,14 +80,21 @@ async def sendContactEmail(
                     detail="Captcha code is not valid.",
                 )
         background_tasks.add_task(sendEmail, form.name, form.email, form.content)
-        await db.execute(
-            text(
-                "INSERT INTO contact_history (name, email, content) VALUES (:name, :email, :content)"
-            ),
-            {"name": form.name, "content": form.content, "email": form.email},
-        )
-        await db.commit()
-        print("passed")
+        # await db.execute(
+        #     text(
+        #         "INSERT INTO contact_history (name, email, content) VALUES (:name, :email, :content)"
+        #     ),
+        #     {"name": form.name, "content": form.content, "email": form.email},
+        # )
+        # await db.commit()
+        item = {
+            "id": {"S": str(uuid4())},
+            "name": {"S": form.name},
+            "email": {"S": form.email},
+            "content": {"S": form.content},
+            "timestamp": {"S": datetime.datetime.now().isoformat()},
+        }
+        dynamo_client.put_item(TableName="contact", Item=item)
         return {"message": "Successfully sent contact form!"}
     except ValueError as e:
         raise HTTPException(
