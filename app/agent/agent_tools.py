@@ -242,13 +242,14 @@ def get_tools():
         },
     ]
 
-    tools = [create_tool(**entry) for entry in tool_info]
+    tools: list[StructuredTool] = [create_tool(**entry) for entry in tool_info]
 
     return tools
 
 
 async def testing():
-    response = await navigation_tool.ainvoke("What projects has Jason worked on?")
+    tools = get_tools()
+    response = await tools[0].ainvoke("What does Jason like to do in his free time?")
     print(response)
 
 

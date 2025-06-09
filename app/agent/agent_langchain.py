@@ -154,16 +154,16 @@ agent = Agent()
 async def main():
     # Test a non-contact query first
     # agent.close_cache()
-    # print("\n=== Testing a general query about Jason ===")
-    # college_query = "Where has Jason gone off to college at?"
-    # college_res = await agent.initial_check(college_query)
-    # print(f"College query response: {college_res}")
+    print("\n=== Testing a general query about Jason ===")
+    college_query = "Where has Jason gone off to college at?"
+    college_res = await agent.initial_check(college_query)
+    print(f"College query response: {college_res}")
 
     # Test a contact query
-    print("\n=== Testing a contact request query ===")
-    contact_query = "I'd like to schedule a meeting with Jason, how can I reach him?"
-    contact_res = await agent.initial_check(contact_query)
-    print(f"Contact query response: {contact_res}")
+    # print("\n=== Testing a contact request query ===")
+    # contact_query = "I'd like to schedule a meeting with Jason, how can I reach him?"
+    # contact_res = await agent.initial_check(contact_query)
+    # print(f"Contact query response: {contact_res}")
 
     # Close connections
     # await agent.close_cache()

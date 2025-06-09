@@ -92,9 +92,9 @@ class PostgresRAG:
             data = {"inputs": query}
             async with aiohttp.ClientSession() as session:
                 response = await session.post(
-                    "https://router.huggingface.co/hf-inference/pipeline/feature-extraction/Snowflake/snowflake-arctic-embed-l-v2.0",
+                    "https://router.huggingface.co/hf-inference/models/Snowflake/snowflake-arctic-embed-l-v2.0/pipeline/feature-extraction",
                     headers=headers,
-                    data=data,
+                    json=data,
                 )
                 dense_vectors = await response.json()
                 return dense_vectors
@@ -388,7 +388,7 @@ class PostgresRAG:
 
         sparse_query = self.bm25.encode_queries(texts=query)
         dense_query = await self.dense_vector_embed(query=query)
-
+        print(dense_query)
         hdense, hsparse = self.hybrid_scale(dense_query, sparse_query, alpha)
 
         print("embedded queries")
